@@ -102,7 +102,8 @@ export const assignLicense = async (req, res, next) => {
       organization: orgId,
     });
 
-    if (activeAssignments + 1 === license.seats) {
+    // Mark is_assigned true whenever at least one seat is occupied
+    if (!license.is_assigned) {
       license.is_assigned = true;
       await license.save();
     }
@@ -125,7 +126,11 @@ export const unassignLicense = async (req, res, next) => {
 
     if (!assignment) return res.status(404).json({ success: false, message: 'Active assignment not found' });
 
-    await License.findByIdAndUpdate(req.params.id, { is_assigned: false });
+    // Only clear is_assigned when no more active assignments remain
+    const remaining = await AssignLicense.countDocuments({ license: req.params.id, is_active: true });
+    if (remaining === 0) {
+      await License.findByIdAndUpdate(req.params.id, { is_assigned: false });
+    }
 
     return res.json({ success: true, message: 'License unassigned successfully' });
   } catch (err) {

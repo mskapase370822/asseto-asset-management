@@ -23,7 +23,7 @@ const createTransporter = () => {
 
 export const sendPasswordResetEmail = async (email, resetUrl) => {
   const transporter = createTransporter();
-  const safeUrl = encodeURI(resetUrl);
+  const safeUrl = escapeHtml(resetUrl);
   await transporter.sendMail({
     from: `"Asseto" <${process.env.EMAIL_USER}>`,
     to: email,

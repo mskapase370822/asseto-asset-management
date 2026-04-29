@@ -3,6 +3,7 @@ import path from 'path';
 import crypto from 'crypto';
 import Asset from '../models/Asset.js';
 import User from '../models/User.js';
+import { sendPasswordResetEmail } from '../services/email.service.js';
 
 const getOrgId = (req) => req.user.organization?._id || req.user.organization;
 
@@ -129,6 +130,11 @@ export const importUsersCSV = async (req, res, next) => {
           password: tempPassword,
           organization: orgId,
         });
+
+        // Send password reset email so user can set their own password
+        const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${tempPassword}`;
+        sendPasswordResetEmail(row.email, resetUrl).catch(() => {});
+
         results.created++;
       } catch (e) {
         results.failed++;
