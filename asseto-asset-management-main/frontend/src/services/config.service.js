@@ -1,0 +1,21 @@
+import api from './api';
+
+export const getTagConfig = () => api.get('/config/tag');
+export const updateTagConfig = (data) => api.patch('/config/tag', data);
+export const getLocalization = () => api.get('/config/localization');
+export const updateLocalization = (data) => api.patch('/config/localization', data);
+export const getBranding = () => api.get('/config/branding');
+export const updateBranding = (data) => api.patch('/config/branding', data);
+export const getExtensions = () => api.get('/config/extensions');
+export const updateExtension = (id, data) => api.patch(`/config/extensions/${id}`, data);
+export const getSlackConfig = () => api.get('/config/slack');
+export const updateSlackConfig = (data) => api.patch('/config/slack', data);
+export const getAutoTag = () => api.get('/config/auto-tag');
+export const getDepartments = () => api.get('/config/departments');
+export const createDepartment = (data) => api.post('/config/departments', data);
+export const getLocations = () => api.get('/config/locations');
+export const createLocation = (data) => api.post('/config/locations', data);
+export const getProductTypes = () => api.get('/config/product-types');
+export const createProductType = (data) => api.post('/config/product-types', data);
+export const getProductCategories = () => api.get('/config/product-categories');
+export const createProductCategory = (data) => api.post('/config/product-categories', data);
