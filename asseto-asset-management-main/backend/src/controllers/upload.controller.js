@@ -1,8 +1,8 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import Asset from '../models/Asset.js';
 import User from '../models/User.js';
-import Product from '../models/Product.js';
 
 const getOrgId = (req) => req.user.organization?._id || req.user.organization;
 
@@ -11,11 +11,35 @@ const parseCSV = (filePath) => {
   const lines = content.split('\n').filter((l) => l.trim());
   if (lines.length < 2) return [];
 
-  const headers = lines[0].split(',').map((h) => h.trim().replace(/"/g, ''));
+  const parseRow = (line) => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  const headers = parseRow(lines[0]);
   const rows = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map((v) => v.trim().replace(/"/g, ''));
+    const values = parseRow(lines[i]);
     const row = {};
     headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
     rows.push(row);
@@ -42,7 +66,8 @@ export const importAssetsCSV = async (req, res, next) => {
     }
 
     const orgId = getOrgId(req);
-    const rows = parseCSV(req.file.path);
+    const uploadedFilePath = req.file.path;
+    const rows = parseCSV(uploadedFilePath);
 
     const results = { created: 0, failed: 0, errors: [] };
 
@@ -65,7 +90,7 @@ export const importAssetsCSV = async (req, res, next) => {
       }
     }
 
-    fs.unlinkSync(req.file.path);
+    fs.unlinkSync(uploadedFilePath);
     return res.json({ success: true, data: results });
   } catch (err) {
     next(err);
@@ -79,7 +104,8 @@ export const importUsersCSV = async (req, res, next) => {
     }
 
     const orgId = getOrgId(req);
-    const rows = parseCSV(req.file.path);
+    const uploadedFilePath = req.file.path;
+    const rows = parseCSV(uploadedFilePath);
 
     const results = { created: 0, failed: 0, errors: [] };
 
@@ -92,13 +118,15 @@ export const importUsersCSV = async (req, res, next) => {
           continue;
         }
 
+        const tempPassword = row.password || crypto.randomBytes(12).toString('hex');
+
         await User.create({
           email: row.email,
           full_name: row.full_name,
           username: row.username,
           phone: row.phone,
           employee_id: row.employee_id,
-          password: row.password || 'TempPassword@123',
+          password: tempPassword,
           organization: orgId,
         });
         results.created++;
@@ -108,7 +136,7 @@ export const importUsersCSV = async (req, res, next) => {
       }
     }
 
-    fs.unlinkSync(req.file.path);
+    fs.unlinkSync(uploadedFilePath);
     return res.json({ success: true, data: results });
   } catch (err) {
     next(err);

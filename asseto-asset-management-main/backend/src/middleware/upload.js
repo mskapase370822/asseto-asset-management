@@ -1,6 +1,7 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 
 const uploadDir = 'uploads';
 if (!fs.existsSync(uploadDir)) {
@@ -12,7 +13,7 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const uniqueSuffix = crypto.randomBytes(16).toString('hex');
     cb(null, `${uniqueSuffix}${path.extname(file.originalname)}`);
   },
 });
@@ -36,10 +37,12 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+const maxFileSizeBytes = parseInt(process.env.UPLOAD_MAX_FILE_SIZE_MB || '10', 10) * 1024 * 1024;
+
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  limits: { fileSize: maxFileSizeBytes },
 });
 
 export const uploadSingle = (fieldName) => upload.single(fieldName);

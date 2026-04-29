@@ -102,7 +102,7 @@ export const assignLicense = async (req, res, next) => {
       organization: orgId,
     });
 
-    if (activeAssignments + 1 >= license.seats) {
+    if (activeAssignments + 1 === license.seats) {
       license.is_assigned = true;
       await license.save();
     }

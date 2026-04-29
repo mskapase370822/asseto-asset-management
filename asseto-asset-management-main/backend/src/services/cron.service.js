@@ -32,8 +32,12 @@ const createWarrantyNotifications = async () => {
         access_level: { $in: ['superuser', 'admin'] },
       });
 
-      for (const admin of admins) {
-        await UserNotification.create({ user: admin._id, notification: notification._id });
+      const notifDocs = admins.map((admin) => ({
+        user: admin._id,
+        notification: notification._id,
+      }));
+      if (notifDocs.length > 0) {
+        await UserNotification.insertMany(notifDocs);
       }
     }
   } catch (err) {
@@ -68,8 +72,12 @@ const createLicenseExpiryNotifications = async () => {
         access_level: { $in: ['superuser', 'admin'] },
       });
 
-      for (const admin of admins) {
-        await UserNotification.create({ user: admin._id, notification: notification._id });
+      const notifDocs = admins.map((admin) => ({
+        user: admin._id,
+        notification: notification._id,
+      }));
+      if (notifDocs.length > 0) {
+        await UserNotification.insertMany(notifDocs);
       }
     }
   } catch (err) {
