@@ -1,0 +1,265 @@
+{% extends 'layouts/main-layout.html' %}
+{% block content %}
+<div class="page-heading">
+    <div class="d-flex justify-content-between">
+        <div class="page-title">
+            <h3 class="page-name">Add Product</h3>
+            <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end d-none d-md-block">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                    <li class="breadcrumb-item" aria-current="page">Products</li>
+                    <li class="breadcrumb-item active" aria-current="page">Add Product</li>
+                </ol>
+            </nav>
+        </div>      
+
+        <div>
+            <a href="{% url 'products:list' %}" class="btn btn-sm btn-outline-info my-3">Back to Product List</a>
+        </div>
+    </div>
+ 
+    <section class="section">
+        <form class="form row" method="POST" action="{{ request.path }}" novalidate enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="card">
+                <div class="card-header">
+                    <button type="submit" class="btn btn-sm btn-info float-end"
+                        onclick="this.innerHTML = `<span class='spinner-grow spinner-grow-sm' role='status' aria-hidden='true'></span> Saving...`;"
+                    >Save</button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 col-12">
+                            <div class="form-group">
+                                <label>Product Name</label>
+                                <span class="text-danger">*</span>
+                                {{form.name}}
+                                {% for error in form.name.errors %}
+                                    <small class="text-danger mb-3">{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-12">
+                            <div class="form-group">
+                                <label>Product Type</label>
+                                <span class="text-danger">*</span>
+                                {{form.product_type}}
+                                {% for error in form.product_type.errors %}
+                                    <small class="text-danger mb-3">{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-12">
+                            <div class="form-group mb-2">
+                                <label>Product Category</label>
+                                <span class="text-danger">*</span>
+                                {{form.product_category}}
+                                {% for error in form.product_category.errors %}
+                                    <small class="text-danger mb-3">{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-12">
+                            <div class="form-group mb-2">
+                                <label>Product Sub Category</label>
+                                {{form.product_sub_category}}
+                                {% for error in form.product_sub_category.errors %}
+                                    <small class="text-danger mb-3">{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-12">
+                            <div class="form-group mb-2">
+                                <label>Manufacturer</label>
+                                {{form.manufacturer}}
+                                {% for error in form.manufacturer.errors %}
+                                    <small class="text-danger mb-3">{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-12">
+                            <div class="form-group mb-2">
+                                <label>Model</label>
+                                {{ form.model }}
+                                {% for error in form.model.errors %}
+                                    <small class="text-danger mb-3">{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-12">
+                            <div class="form-group mb-2">
+                                <label>Product EOL</label>
+                                {{ form.eol }}
+                                {% for error in form.eol.errors %}
+                                    <small class="text-danger mb-3">{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-12">
+                            <div class="form-group mb-2">
+                                <label>Audit Interval</label>
+                                <select class="form-control" name="audit_interval">
+                                    <option value="1">Yearly</option>
+                                    <option value="2">Half Yearly</option>
+                                    <option value="3">Quarterly</option>
+                                    <option value="4">Bi-Monthly</option>
+                                    <option value="4">Monthly</option>
+                                    <option value="5">Not Applicable</option>
+                                </select>
+                                {% for error in form.eol.errors %}
+                                    <small class="text-danger mb-3">{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-12 col-12">
+                            <div class="form-group">
+                                <label>Description</label>
+                                {{form.description}}
+                                {% for error in form.description.errors %}
+                                    <small class="text-danger mb-3">{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <!-- Image upload -->
+                        <div class="col-md-6 col-12">
+                            <div class="form-group">
+                                <label>Add Product Image</label>
+                                {{image_form.image}}
+                                {% for error in image_form.image.errors %}
+                                    <small class="text-danger mb-3">{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                            <div class="form-group rounded ml-2" id="imagePreview"></div>                    
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Custom Fields Section -->
+            <div class="card mt-3">
+                <div class="card-header">Custom Fields</div>
+                <div class="card-body" id="custom-field-container">
+                    <div class="row">
+                        <div class="col-5">
+                            <div class="form-group">
+                                <input type="text" class="form-control"
+                                       placeholder="Custom Field Name"
+                                       name="custom_field_name" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="col-5">
+                            <div class="form-group">
+                                <input type="text" class="form-control"
+                                       placeholder="Custom Field Value"
+                                       name="custom_field_value" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="form-group">
+                                <button type="button" id="addCustomFieldBtn" class="btn btn-sm btn-info">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Hidden template for additional custom fields -->
+                    <div style="display:none">
+                        <div class="row rm-custom-field" id="custom-field-template">
+                            <div class="col-5">
+                                <div class="form-group">
+                                    <input type="text" class="form-control"
+                                        placeholder="Custom Field Name"
+                                        name="custom_field_name" autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="col-5">
+                                <div class="form-group">
+                                    <input type="text" class="form-control"
+                                        placeholder="Custom Field Value"
+                                        name="custom_field_value" autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="col-auto">
+                                <div class="form-group">
+                                    <button type="button" onclick="removeCustomField(this)" class="btn btn-sm btn-danger">
+                                        <i class="bi bi-dash-lg"></i>
+                                    </button>
+                                </div>
+                            </div>   
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </section>
+</div>
+<script>
+    // Trigger on product category change to fetch subcategories
+    document.querySelector('#id_product_category')?.addEventListener('change', function () {
+        const categoryId = this.value;
+        const subCatSelect = document.querySelector('#id_product_sub_category');
+        subCatSelect.innerHTML = '<option value="">Loading...</option>';
+        fetch(`/admin/get-subcategories/?category_id=${categoryId}`)
+            .then(response => response.json())
+            .then(data => {
+                let options = '<option value="">--SELECT--</option>';
+                data.forEach(function (item) {
+                    options += `<option value="${item.id}">${item.name}</option>`;
+                });
+                subCatSelect.innerHTML = options;
+            })
+            .catch(() => {
+                subCatSelect.innerHTML = '<option value="">Error loading</option>';
+            });
+    });
+
+    const productCategorySelect = document.getElementById('id_product_category');
+    const productSubCategorySelect = document.getElementById('id_product_sub_category');
+
+    function toggleSubCategory() {
+        if (!productCategorySelect.value) {
+            productSubCategorySelect.disabled = true;
+            productSubCategorySelect.value = '';
+        } else {
+            productSubCategorySelect.disabled = false;
+        }
+    }
+
+    // Initial state on page load
+    toggleSubCategory();
+
+    // Listen for changes
+    productCategorySelect.addEventListener('change', toggleSubCategory);
+
+    // Add new custom field row
+    document.getElementById("addCustomFieldBtn").onclick = function() {
+        var container = document.getElementById("custom-field-container");
+        var template = document.getElementById("custom-field-template");
+        container.appendChild(template.cloneNode(true));
+    }
+    // Remove a custom field row
+    function removeCustomField(el) {
+        el.closest(".rm-custom-field").remove();
+    }
+
+    // Image Preview (jQuery)
+    function filePreview(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                $("#imagePreview img").remove();
+                $("#imagePreview").after(
+                    '<img src="' +
+                        e.target.result +
+                        '" class="rounded" width="100" height="80"/>'
+                );
+            };
+            reader.readAsDataURL(input.files);
+        }
+    }
+    $("#id_image").change(function () {
+        $("#imagePreview img").remove();
+        filePreview(this);
+    });
+
+</script>
+{% endblock content %}

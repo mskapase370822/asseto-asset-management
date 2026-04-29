@@ -1,0 +1,110 @@
+
+<div class="assign-modal-header">
+    <div class="header-info">
+        <h5 class="assign-modal-title">Assign Asset</h5>
+        <p class="assign-modal-subtitle">Update ownership for <strong>{{ asset.tag }}</strong></p>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<form id="assign-asset-form" enctype="multipart/form-data">
+{% csrf_token %}
+    <div class="modal-body p-4">
+        {# ── Asset info card ─────────────────────────────────────── #}
+        <div class="assign-asset-card">
+            <div class="assign-asset-thumb">
+                {% if asset_image and asset_image.image %}
+                    <img src="{{ asset_image.image.url }}" alt="{{ asset.name }}">
+                {% else %}
+                    <div class="assign-asset-thumb-placeholder">
+                        <i class="bi bi-laptop"></i>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="assign-asset-info">
+                <span class="assign-asset-name">{{ asset.name }}</span>
+                <span class="assign-asset-tag">TAG: {{ asset.tag }}</span>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                {# ── Assignee Name ───────────────────────────────────────── #}
+                <div class="assign-form-group">
+                    <label class="assign-form-label">Assignee Name</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- <i class="bi bi-person input-icon"></i> -->
+                        {{ form.user }}
+                    </div>
+                    {% for error in form.user.errors %}
+                        <small class="text-danger">{{ error }}</small>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="col-md-12">
+                {# ── Issue Date ──────────────────────────────────────────── #}
+                <div class="assign-form-group">
+                    <label class="assign-form-label">Issue Date</label>
+                    {{ form.issue_date }}
+                    {% for error in form.issue_date.errors %}
+                        <small class="text-danger">{{ error }}</small>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                {# ── Asset Images ────────────────────────────────────────── #}
+                <div class="assign-form-group">
+                    <label class="assign-form-label">Asset Images</label>
+                    <input type="file" name="images" id="images" multiple class="form-control">
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                {# ── Assignment Notes ────────────────────────────────────── #}
+                <div class="assign-form-group mb-0">
+                    <label class="assign-form-label">Assignment Notes</label>
+                    {{ form.notes }}
+                    {% for error in form.notes.errors %}
+                        <small class="text-danger">{{ error }}</small>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="assign-modal-footer">
+        <button type="button" class="btn-reset" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn-register">Confirm Assignment</button>
+    </div>
+</form>
+
+<script>
+    document.getElementById("assign-asset-form").addEventListener("submit", function(e) {
+        e.preventDefault();
+
+        let form = e.target;
+        let formData = new FormData(form);
+
+        fetch("{% url 'assets:assign_asset_in_asset_list' asset.id %}", {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                let modal = bootstrap.Modal.getInstance(document.getElementById("assign-asset-list-modal"));
+                modal.hide();
+                location.reload();
+            } else {
+                return response.text().then(html => {
+                    document.getElementById("assign-asset-modal-list-content").innerHTML = html;
+                });
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    });
+</script>

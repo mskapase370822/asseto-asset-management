@@ -1,0 +1,117 @@
+{% extends 'layouts/main-layout.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}License Details - {{ license.name }} | Asseto{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/list-common.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/license-details.css' %}?v=1.1">
+{% endblock css %}
+
+{% block content %}
+<div class="page-heading">
+    <div class="d-flex justify-content-between">
+        <div class="page-title">
+            <h3 class="page-name">License Details</h3>
+
+            <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end d-none d-md-block">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                    <li class="breadcrumb-item" aria-current="page">License</li>
+                    <li class="breadcrumb-item active" aria-current="page">License Details</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    {# ── Header Row ────────────────────────────────────────────────────────── #}
+    <div class="header-row">
+        <h1>{{ license.name }}</h1>
+        <p class="page-subtitle">View and manage license details and assigned seats.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'license:license_list' %}" class="btn-back-listing">
+            <i class="bi bi-arrow-left"></i> Back to Listing
+        </a>
+        <a href="{% url 'license:update_license' license.id %}" class="btn-save-asset">
+            <i class="bi bi-pencil"></i> Update License
+        </a>
+    </div>
+</div>
+
+<section class="section">
+    <div class="card">
+        <div class="card-body">
+            <h6 class="my-3">
+                <i class="bi bi-pc-display"></i>
+                <span>License Information</span>
+            </h6>
+            <div class="table-responsive">
+                <table class="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <th scope="row">License Name</th>
+                            <td>{{license.name}}</td>
+
+                            <th scope="row">Key</th>
+                            {% if not license.key %} <td>Not Provided</td>
+                            {% else %}
+                            <td>{{license.key}}</td>
+                            {% endif %}
+                        </tr>
+                        <tr>
+                            <th scope="row">License Type</th>
+                            <td>{{license.license_type.name}}</td>
+                            <th scope="row">Expiry Date</th>
+                            {% if license.expiry_date == None %} <td>Not Provided</td>
+                            {% else %}
+                            <td>{% format_datetime license.expiry_date %}</td>
+                            {% endif %}
+                        </tr>
+
+                        <tr>
+                            <th scope="row">Vendor</th>
+                            <td>{{license.vendor.name}}</td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">Seats</th>
+                            {% if not license.seats %} <td>Not Provided</td>
+                            {% else %}
+                            <td>{{license.seats}}</td>
+                            {% endif %}
+                        </tr>
+                        <tr>
+                            <th scope="row">Start Date</th>
+                            {% if license.start_date == None %} <td>Not Provided</td>
+                            {% else %}
+                            <td>{% format_datetime license.start_date %}</td>
+                            {% endif %}
+                        </tr>
+                        <tr>
+                            <th scope="row">Notes</th>
+                            <td colspan="3">{{license.notes|urlize}}</td>
+                        </tr>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    {# ── History Section ───────────────────────────────────────────────────── #}
+    <div class="mt-4">
+        {% include 'commons/history.html' %}
+    </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('hidden.bs.modal', () => {
+                window.location.reload();
+            });
+        });
+    </script>
+    {% endblock content %}

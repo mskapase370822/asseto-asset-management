@@ -1,0 +1,316 @@
+<footer class="site-footer">
+    <div class="footer clearfix mb-0 text-muted d-flex flex-column flex-sm-row align-items-center justify-content-sm-between">
+        <div class="float-start">
+            <p>{% now 'Y' %} &copy; Asset Management</p>
+        </div>
+        <div class="float-end">
+            <p>
+                Powered by
+                <a href="https://vyrazu.com">Vyrazu Labs</a>
+            </p>
+        </div>
+    </div>
+</footer>
+</div>
+</div>
+<script>
+    $(".modal").on("hidden.bs.modal", function () {
+        document.querySelectorAll(".modal-content").forEach((e)=>{
+            e.innerHTML = ""
+        })
+    });
+    
+</script>
+
+<script>
+    const searchInput = document.getElementById('global-search');
+
+    // Save the current page URL as the origin page on every non-search page load
+    if (!window.location.pathname.startsWith('/search')) {
+        sessionStorage.setItem('searchOriginPage', window.location.href);
+    }
+
+    function highlightText(container, text) {
+        if (!text) return;
+
+        const regex = new RegExp(`(${text})`, 'gi');
+
+        const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+        const nodes = [];
+
+        while (walker.nextNode()) {
+            nodes.push(walker.currentNode);
+        }
+
+        for (const node of nodes) {
+            if (node.parentNode && !node.parentNode.classList.contains('highlight')) {
+                const replaced = node.nodeValue.replace(regex, '<span class="highlight">$1</span>');
+                if (replaced !== node.nodeValue) {
+                    const wrapper = document.createElement('span');
+                    wrapper.innerHTML = replaced;
+                    node.parentNode.replaceChild(wrapper, node);
+                }
+            }
+        }
+    }
+
+    function doSearch(query) {
+        const originPage = sessionStorage.getItem('searchOriginPage') || '/';
+        document.querySelectorAll('h3').forEach(h3 => {
+            h3.innerText = 'Search Results';
+        });
+
+        if (!query.trim()) {
+            // Clear and go back to the origin page
+            sessionStorage.removeItem('searchOriginPage');
+            window.location.href = originPage;
+            return;
+        }
+
+        fetch(`/admin/global-search/?search_text=${encodeURIComponent(query)}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to fetch');
+            return response.text();
+        })
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            const newSection = doc.querySelector('section');
+            const currentSection = document.querySelector('section');
+
+            if (newSection && currentSection) {
+                currentSection.innerHTML = newSection.innerHTML;
+
+                // Highlight after injecting the new content
+                highlightText(currentSection, query);
+            }
+        })
+        .catch(error => {
+            console.error('Search error:', error);
+        });
+    }
+
+    // Live search on input
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value;
+        doSearch(query);
+    });
+</script>
+
+<script>
+document.getElementById('global-search').addEventListener('keyup', function(e) {
+    if (e.key === 'Enter' || this.value.length > 2) {
+        performSearch();
+    }
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const modalEl = document.getElementById("exampleModal");
+    const cameraDiv = document.getElementById("camera-preview");
+    let scanning = false;
+    let modalInstance = new bootstrap.Modal(modalEl);
+
+    // Check if a camera is available
+    async function cameraAvailable() {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            return devices.some(d => d.kind === "videoinput");
+        } catch (err) {
+            console.error("Error checking cameras:", err);
+            return false;
+        }
+    }
+
+    function startQuagga() {
+        if (scanning) return;
+        scanning = true;
+
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: cameraDiv,
+                constraints: {
+                    facingMode: "environment",
+                    width: { min: 640 },
+                    height: { min: 480 }
+                }
+            },
+            decoder: {
+                readers: ["code_128_reader","ean_reader","ean_8_reader","code_39_reader","upc_reader"]
+            },
+            locate: true,
+            numOfWorkers: 2,
+        }, function(err) {
+            if (err) {
+                console.error("Quagga init error:", err);
+                alert("Camera not found or not accessible.");
+                scanning = false;
+                return;
+            }
+            Quagga.start();
+            console.log("Quagga started");
+        });
+
+        Quagga.onDetected(result => {
+            const code = result.codeResult.code;
+            console.log("Detected barcode:", code);
+
+            fetch(`/assets/scan-barcode/${code}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        window.location.href = `/assets/details/${data.id}`;
+                    } else {
+                        alert("Invalid tag");
+                    }
+                })
+                .catch(err => console.error("API Error:", err));
+        });
+    }
+
+    function stopQuagga() {
+        if (scanning) {
+            Quagga.stop();
+            scanning = false;
+            console.log("Quagga stopped");
+        }
+    }
+
+    // Button click: check camera first
+    document.getElementById("scanButton").addEventListener("click", async () => {
+        const hasCamera = await cameraAvailable();
+        if (!hasCamera) {
+            alert("⚠️ No camera device found.");
+            return;
+        }
+
+        modalInstance.show();
+        setTimeout(startQuagga, 300); // start scanning
+    });
+
+    // Stop scanner when modal closes
+    modalEl.addEventListener("hidden.bs.modal", stopQuagga);
+});
+</script>
+
+<script>
+    document.getElementById("download-btn").addEventListener("click", function() {
+        var svgElement = document.querySelector('.asset-barcode').querySelector("svg");
+        console.log(svgElement,"svgElement")
+        
+        // Add necessary attributes
+        if (!svgElement.hasAttribute('xmlns')) {
+            console.log("if1")
+            svgElement.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        }
+        if (!svgElement.hasAttribute('width')) {
+            console.log("if2")
+            svgElement.setAttribute('width', '300');
+        }
+        if (!svgElement.hasAttribute('height')) {
+            console.log("if3")
+            svgElement.setAttribute('height', '150');
+        }
+        
+        var serializer = new XMLSerializer();
+        var svgString = serializer.serializeToString(svgElement);
+        
+        var blob = new Blob([svgString], {type: "image/svg+xml"});
+        var url = URL.createObjectURL(blob);
+        
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'barcode.svg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+    
+</script>
+
+<script>
+    const searchModal = document.getElementById('searchModal');
+    const global_searchInput = document.getElementById('globalSearch');
+    const searchResults = document.getElementById('searchResults');
+
+    searchModal.addEventListener('shown.bs.modal', () => global_searchInput.focus());
+
+    searchModal.addEventListener('hidden.bs.modal', () => {
+        global_searchInput.value = '';
+        searchResults.innerHTML = `
+        <div class="empty-state">
+            <i class="bi bi-search d-block"></i>
+            <p class="mb-0">Start typing to search</p>
+        </div>
+        `;
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+            e.preventDefault();
+            bootstrap.Modal.getOrCreateInstance(searchModal).show();
+        }
+    });
+    document.addEventListener("htmx:afterSwap", function (event) {
+        if (event.detail.target.id !== "searchResults") return;
+
+        const query = global_searchInput.value.trim();
+        if (!query) return;
+
+        highlightSearch(query);
+    });
+
+    function highlightSearch(query) {
+        const safe = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(safe, "gi");
+
+        const elements = searchResults.querySelectorAll(
+            ".result-title, .result-meta"
+        );
+
+        elements.forEach(el => {
+            const cleaned = el.innerHTML.replace(/<mark class="search-highlight">|<\/mark>/g, "");
+            el.innerHTML = cleaned.replace(regex, m =>
+                `<mark class="search-highlight">${m}</mark>`
+            );
+        });
+    }
+    document.addEventListener("click", function (event) {
+        const link = event.target.closest("a.result-item");
+        if (!link) return;
+
+        event.preventDefault();
+
+        const href = link.href;
+        const modal = bootstrap.Modal.getInstance(searchModal);
+        if (modal) modal.hide();
+
+        // allow modal to close smoothly before redirect
+        setTimeout(() => window.location.href = href, 150);
+    });
+</script>
+
+<!-- assign license modal success handler -->
+<script>
+    function handleAssignSuccess(evt) {
+        if (evt.detail.xhr.status === 204) {
+            const modalEl = document.getElementById("assign-license-list-modal");
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+
+            // Refresh only the table
+            htmx.trigger("#license-table", "refresh");
+        }
+    }
+</script>
+
+</body>
+</html>

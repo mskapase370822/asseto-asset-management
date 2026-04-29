@@ -1,0 +1,238 @@
+{% extends 'layouts/main-layout.html' %}
+{% load static %}
+
+{% block title %}{% if get_asset %}Update Audit{% else %}Add Audit{% endif %} | Asseto{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/audit.css' %}">
+{% endblock css %}
+
+{% block content %}
+
+{# ── Page header ──────────────────────────────────────────────────────────── #}
+<div class="audit-page-header">
+  <div>
+    <h1>{% if get_asset %}Update Audit{% else %}New Audit Entry{% endif %}</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb page-breadcrumb">
+        <li class="breadcrumb-item"><a href="/" class="breadcrumb-link">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'audit:completed_audits' %}" class="breadcrumb-link">Audit</a></li>
+        <li class="breadcrumb-item active">{% if get_asset %}Update Audit{% else %}Add Audit{% endif %}</li>
+      </ol>
+    </nav>
+  </div>
+  <a href="{% url 'audit:completed_audits' %}" class="btn-back">
+    <i class="bi bi-arrow-left"></i> Back to Audit
+  </a>
+</div>
+
+<form method="POST" action="{{ request.path }}" novalidate enctype="multipart/form-data" id="audit-form">
+{% csrf_token %}
+
+<div class="audit-layout">
+
+  {# ── Left: Audit Information ──────────────────────────────────────────────── #}
+  <div class="audit-main">
+    <div class="audit-card">
+      <div class="audit-card-header">
+        <div class="section-icon"><i class="bi bi-info-circle-fill"></i></div>
+        <h2>Audit Information</h2>
+      </div>
+      <div class="audit-card-body">
+
+        {# Asset Tag + Assigned To #}
+        <div class="row g-3 mb-4">
+          <div class="col-md-6 col-12">
+            <label class="field-label">Asset Id / Tag Number <span class="required-star">*</span></label>
+            {% if get_asset %}
+              <input type="text" class="field-input" name="tag" value="{{ get_asset.tag }}" disabled>
+            {% elif get_audit.asset %}
+              <input type="text" class="field-input" name="tag" value="{{ get_audit.asset.tag }}">
+            {% else %}
+              <div style="position:relative;">
+                <input type="text" class="field-input" name="tag" id="tag-input"
+                       placeholder="e.g. ASSET-1002" autocomplete="off">
+                <ul id="tag-suggestions" class="audit-suggestions"></ul>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-6 col-12">
+            <label class="field-label">Assigned To <span class="required-star">*</span></label>
+            {% if get_asset and asset_assigned_users %}
+              <input type="text" class="field-input" name="assigned_to"
+                     id="assigned-to-input" value="{{ asset_assigned_users }}" disabled>
+            {% else %}
+              <input type="text" class="field-input" name="assigned_to"
+                     id="assigned-to-input" value="Not Assigned" disabled>
+            {% endif %}
+            <span id="assigned-to-msg" class="field-hint"></span>
+          </div>
+        </div>
+
+        {# Condition Status #}
+        <div class="mb-4">
+          <label class="field-label">Condition Status <span class="required-star">*</span></label>
+          <div class="condition-btn-group">
+            <button type="button" data-value="0" class="condition-btn">Excellent</button>
+            <button type="button" data-value="1" class="condition-btn">Good</button>
+            <button type="button" data-value="2" class="condition-btn">Fair</button>
+            <button type="button" data-value="3" class="condition-btn">Bad</button>
+            <button type="button" data-value="4" class="condition-btn">Retired</button>
+          </div>
+          <input type="hidden" name="condition" id="condition-input">
+          {% if errors.condition %}
+            <span class="field-error">{{ errors.condition }}</span>
+          {% endif %}
+        </div>
+
+        {# Comments #}
+        <div>
+          <label class="field-label">Detailed Observations / Comments <span class="required-star">*</span></label>
+          <textarea class="field-textarea" name="comments" rows="6"
+                    placeholder="Enter comments">{% if get_audit.comments %}{{ get_audit.comments }}{% endif %}</textarea>
+          {% if errors.comments %}
+            <span class="field-error">{{ errors.comments }}</span>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  {# ── Right: Image + Actions ───────────────────────────────────────────────── #}
+  <div class="audit-sidebar">
+
+    {# Audit Image upload #}
+    <div class="audit-card">
+      <div class="audit-card-header">
+        <div class="section-icon"><i class="bi bi-camera-fill"></i></div>
+        <h2>Audit Image</h2>
+      </div>
+      <div class="audit-card-body">
+        <label for="audit-image-input" class="audit-upload-area">
+          <i class="bi bi-cloud-arrow-up pb-4"></i>
+          <div class="upload-label">Click to upload or drag &amp; drop</div>
+          <div class="upload-hint">PNG, JPG or PDF (MAX. 10MB)</div>
+        </label>
+        <input id="audit-image-input" type="file" name="image" multiple style="display:none;"
+               onchange="updateFileLabel(this)">
+        <div class="audit-file-label mt-2">
+          <span class="upload-hint">The number of files selected will be logged</span>
+          <span id="audit-file-chosen" class="audit-file-chosen">No file chosen</span>
+        </div>
+      </div>
+    </div>
+
+    {# Save / Discard #}
+    <div class="audit-card">
+      <div class="audit-card-body">
+        <button type="submit" class="btn-save-audit"
+                onclick="this.innerHTML='<span class=\'spinner-border spinner-border-sm me-2\'></span>Saving...'">
+          <i class="bi bi-check-lg"></i> Save Audit Changes
+        </button>
+        <a href="{% url 'audit:completed_audits' %}" class="btn-discard-audit">
+          Discard Changes
+        </a>
+        <p class="audit-compliance-note">
+          Saving this record will update the asset status in the system and log your administrator ID for compliance auditing.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</form>
+
+<script>
+// File label update
+function updateFileLabel(input) {
+  const label = document.getElementById('audit-file-chosen');
+  label.textContent = input.files.length > 1
+    ? input.files.length + ' files chosen'
+    : (input.files[0]?.name || 'No file chosen');
+}
+
+// Drag-and-drop on upload area
+const uploadArea = document.querySelector('.audit-upload-area');
+if (uploadArea) {
+  uploadArea.addEventListener('click', () => document.getElementById('audit-image-input').click());
+  uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+  uploadArea.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    const input = document.getElementById('audit-image-input');
+    input.files = e.dataTransfer.files;
+    updateFileLabel(input);
+  });
+}
+
+// Condition buttons
+document.addEventListener('DOMContentLoaded', function () {
+  const conditionInput = document.getElementById('condition-input');
+  document.querySelectorAll('.condition-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.condition-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      conditionInput.value = btn.dataset.value;
+    });
+    if (conditionInput.value === btn.dataset.value) btn.classList.add('active');
+  });
+});
+
+// Tag autocomplete
+const tagInput = document.getElementById('tag-input');
+const suggestionBox = document.getElementById('tag-suggestions');
+
+if (tagInput && suggestionBox) {
+  let debounce;
+  tagInput.addEventListener('input', function () {
+    clearTimeout(debounce);
+    const q = this.value.trim();
+    if (!q) { suggestionBox.innerHTML = ''; suggestionBox.style.display = 'none'; return; }
+    debounce = setTimeout(() => {
+      fetch(`/audit/get-tags-list/?tag=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(data => {
+          const tags = data.tags || [];
+          suggestionBox.innerHTML = '';
+          suggestionBox.style.display = tags.length ? 'block' : 'none';
+          tags.forEach(tag => {
+            const li = document.createElement('li');
+            li.className = 'audit-suggestion-item';
+            li.textContent = tag;
+            li.onclick = () => {
+              tagInput.value = tag;
+              tagInput.dispatchEvent(new Event('keyup'));
+              suggestionBox.innerHTML = '';
+              suggestionBox.style.display = 'none';
+            };
+            suggestionBox.appendChild(li);
+          });
+        });
+    }, 300);
+  });
+
+  tagInput.addEventListener('keyup', function () {
+    const tag = this.value.trim();
+    if (!tag) return;
+    fetch(`/audit/get-assigned-user/${tag}`)
+      .then(r => r.json())
+      .then(data => {
+        const inp = document.getElementById('assigned-to-input');
+        const msg = document.getElementById('assigned-to-msg');
+        inp.disabled = true;
+        inp.value = data.exists ? (data.assigned_user || 'Not Assigned') : '';
+        msg.textContent = data.exists
+          ? (data.assigned_user ? 'Assigned user found.' : 'Asset exists but not assigned.')
+          : 'No asset found with this tag.';
+        if (!data.exists) inp.disabled = false;
+      })
+      .catch(console.error);
+  });
+}
+</script>
+
+{% endblock content %}

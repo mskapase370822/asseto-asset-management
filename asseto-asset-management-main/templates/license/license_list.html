@@ -1,0 +1,303 @@
+{% extends 'layouts/main-layout.html' %}
+{% load custom_filters %}
+{% load static %}
+
+{% block title %}License Inventory | Asseto{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/list-common.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/assets/assets-common.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/assets/assets-list.css' %}">
+{% endblock css %}
+
+{% block content %}
+
+{# ── Page header ──────────────────────────────────────────────────────────── #}
+<div class="assets-page-header">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb page-breadcrumb">
+        <li class="breadcrumb-item"><a href="/" class="breadcrumb-link">Dashboard</a></li>
+        <li class="breadcrumb-item active">License</li>
+      </ol>
+    </nav>
+    <h1>License Inventory</h1>
+    <p class="page-subtitle">Manage and track your organization's software licenses and subscriptions.</p>
+  </div>
+  <div class="d-flex align-items-center gap-2 mt-1">
+    {% if perms.authentication.add_license %}
+    <a href="{% url 'license:add_license' %}" class="btn-register">
+      <i class="bi bi-plus-lg"></i> Register New License
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Stat cards ───────────────────────────────────────────────────────────── #}
+<div class="stats-grid">
+  <a href="{% url 'license:license_list' %}" class="stat-card">
+    <div class="stat-icon blue"><i class="bi bi-clipboard2-data"></i></div>
+    <div>
+      <div class="stat-label">Total Licenses</div>
+      <div class="stat-value">{{ total_licenses }}</div>
+    </div>
+  </a>
+  <a href="{% url 'license:license_list' %}" class="stat-card">
+    <div class="stat-icon green"><i class="bi bi-person-check-fill"></i></div>
+    <div>
+      <div class="stat-label">Total Seats</div>
+      <div class="stat-value">{{ total_seats }}</div>
+    </div>
+  </a>
+  <a href="{% url 'license:license_list' %}" class="stat-card">
+    <div class="stat-icon orange"><i class="bi bi-shield-check"></i></div>
+    <div>
+      <div class="stat-label">Assigned</div>
+      <div class="stat-value">{{ assigned_count }}</div>
+    </div>
+  </a>
+  <a href="javascript:void(0)" class="stat-card">
+    <div class="stat-icon red"><i class="bi bi-trash3-fill"></i></div>
+    <div>
+      <div class="stat-label">Trash</div>
+      <div class="stat-value">{{ deleted_count }}</div>
+    </div>
+  </a>
+</div>
+
+{# ── Filter bar ───────────────────────────────────────────────────────────── #}
+<div class="filter-card">
+  {% csrf_token %}
+  <form id="license-filter-form" hx-get="{% url 'license:search_license' %}" hx-target="#search_result"
+    hx-trigger="change, keyup changed delay:400ms from:input">
+    <div class="row g-2 align-items-end">
+
+      <div class="col-12 col-sm-6 col-lg">
+        <div class="filter-label">Search License</div>
+        <input name="search_text" type="search" autocomplete="off" placeholder="Name, Vendor or Type…"
+          hx-get="{% url 'license:search_license' %}" hx-trigger="keyup changed delay:400ms, search"
+          hx-target="#search_result" aria-label="Search licenses">
+      </div>
+
+      <div class="col-6 col-sm-4 col-lg-auto">
+        <div class="filter-label">License Type</div>
+        <div class="dropdown">
+          <button class="filter-select-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" id="type-btn"
+            aria-label="Filter by type">
+            All Types
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              aria-hidden="true">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          <ul class="dropdown-menu">
+            <li><a href="#" class="dropdown-item"
+                onclick="event.preventDefault();document.querySelector('[name=license_type]').value='';document.getElementById('type-btn').childNodes[0].textContent='All Types ';htmx.trigger('#license-filter-form','change');">All
+                Types</a></li>
+            {% for type in license_type_list %}
+            <li><a href="#" class="dropdown-item"
+                onclick="event.preventDefault();document.querySelector('[name=license_type]').value='{{ type.id }}';document.getElementById('type-btn').childNodes[0].textContent='{{ type.name }} ';htmx.trigger('#license-filter-form','change');">
+                {{ type.name }}
+              </a></li>
+            {% endfor %}
+          </ul>
+          <input type="hidden" name="license_type">
+        </div>
+      </div>
+
+      <div class="col-6 col-sm-4 col-lg-auto">
+        <div class="filter-label">Vendor</div>
+        <div class="dropdown">
+          <button class="filter-select-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" id="vendor-btn"
+            aria-label="Filter by vendor">
+            All Vendors
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              aria-hidden="true">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          <ul class="dropdown-menu">
+            <li><a href="#" class="dropdown-item"
+                onclick="event.preventDefault();document.querySelector('[name=vendor]').value='';document.getElementById('vendor-btn').childNodes[0].textContent='All Vendors ';htmx.trigger('#license-filter-form','change');">All
+                Vendors</a></li>
+            {% for vendor in vendor_list %}
+            <li><a href="#" class="dropdown-item"
+                onclick="event.preventDefault();document.querySelector('[name=vendor]').value='{{ vendor.id }}';document.getElementById('vendor-btn').childNodes[0].textContent='{{ vendor.name }} ';htmx.trigger('#license-filter-form','change');">
+                {{ vendor.name }}
+              </a></li>
+            {% endfor %}
+          </ul>
+          <input type="hidden" name="vendor">
+        </div>
+      </div>
+
+      <div class="col-auto">
+        <a href="{% url 'license:license_list' %}" class="btn-reset" title="Reset all filters">
+          <i class="bi bi-arrow-counterclockwise"></i> Reset
+        </a>
+      </div>
+
+    </div>
+  </form>
+</div>
+
+{# ── Table card ───────────────────────────────────────────────────────────── #}
+<div class="table-card">
+  <div class="table-responsive">
+    <table class="assets-table" id="table1">
+      <thead>
+        <tr>
+          <th>Sl No.</th>
+          <th>License Name</th>
+          <th>Type</th>
+          <th>Seats</th>
+          <th>Vendor</th>
+          <th>Assigned To</th>
+          <th>Start Date</th>
+          <th>Expiry Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody id="search_result">
+        {% if page_object %}
+        {% for license in page_object %}
+        <tr>
+          <td class="table-index-cell">
+            {{ page_object.start_index|add:forloop.counter0|stringformat:"02d" }}
+          </td>
+
+          <td>
+            <div class="asset-name-main">{{ license.name }}</div>
+          </td>
+
+          <td><span class="status-badge status-deploy">{{ license.license_type.name }}</span></td>
+
+          <td><span class="asset-tag-pill">{{ license.seats }}</span></td>
+
+          <td>
+            {{ license.vendor.name|default:"-" }}
+            {% if license.vendor.is_deleted %}
+            <i class="bi bi-exclamation-triangle text-warning" title="Vendor is deleted"></i>
+            {% endif %}
+          </td>
+
+          <td>
+            {% if license.is_assigned %}
+            {% with map=assigned_user|get_item:license.id %}
+            <div class="assignee-chip mb-1">
+              {% if map.image %}
+              <img src="{{ map.image.url }}" onerror="this.onerror=null;this.src='{% static 'images/faces/1.jpg' %}';"
+                alt="{{ map.name }}" width="22" height="22">
+              {% else %}
+              <span class="assignee-initials">
+                {% if map.name %}{{ map.name|slice:":2"|upper }}{% else %}??{% endif %}
+              </span>
+              {% endif %}
+              <span>{{ map.name|default:"Unknown User" }}</span>
+            </div>
+            {% endwith %}
+            <form action="{% url 'license:unassign_license' license.id %}" method="post" class="form-row-action"
+              onsubmit="return confirm('Unassign this license?')">
+              {% csrf_token %}
+              <button type="submit" class="btn-unassign">Unassign</button>
+            </form>
+            {% else %}
+            <span class="unassigned-label">Unassigned</span>
+            <button type="button" class="btn-assign mt-1" hx-get="{% url 'license:assign_license' license.id %}"
+              hx-target="#assign-license-modal-content" hx-trigger="click" data-bs-toggle="modal"
+              data-bs-target="#assign-license-list-modal" aria-label="Assign {{ license.name }}">
+              + Assign
+            </button>
+            {% endif %}
+          </td>
+
+          <td>{{ license.start_date|date:"M d, Y"|default:"-" }}</td>
+          <td>{{ license.expiry_date|date:"M d, Y"|default:"-" }}</td>
+
+          <td>
+            <div class="row-actions">
+              {% if perms.authentication.view_license %}
+              <a href="{% url 'license:license_details' license.id %}" class="action-btn"
+                title="View {{ license.name }}">
+                <i class="bi bi-eye"></i>
+              </a>
+              {% endif %}
+              {% if perms.authentication.edit_license %}
+              <a href="{% url 'license:update_license' license.id %}" class="action-btn"
+                title="Edit {{ license.name }}">
+                <i class="bi bi-pencil"></i>
+              </a>
+              {% endif %}
+              {% if perms.authentication.delete_license %}
+              <form action="{% url 'license:delete_license' license.id %}" method="post" class="form-row-action"
+                onsubmit="return confirm('Delete {{ license.name }}?')">
+                {% csrf_token %}
+                <button type="submit" class="action-btn danger" title="Delete {{ license.name }}">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+
+        {% else %}
+        <tr>
+          <td colspan="9">
+            <div class="table-empty-state">
+              <i class="bi bi-inbox d-block"></i>
+              <p>No licenses found.<br>
+                <a href="{% url 'license:add_license' %}" class="link-primary">Register your first license</a>
+              </p>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ── Pagination ─────────────────────────────────────────────────────────── #}
+  {% if page_object %}
+  <div class="pagination-wrap">
+    <span>
+      Showing <strong>{{ page_object.start_index }}–{{ page_object.end_index }}</strong>
+      of <strong>{{ page_object.paginator.count }}</strong> licenses
+    </span>
+    <div class="pagination-nav">
+      {% if page_object.has_previous %}
+      <a href="?page={{ page_object.previous_page_number }}" class="page-btn" aria-label="Previous page">‹</a>
+      {% else %}
+      <span class="page-btn disabled" aria-disabled="true">‹</span>
+      {% endif %}
+
+      {% for num in page_object.paginator.page_range %}
+      {% if page_object.number == num %}
+      <span class="page-btn active" aria-current="page">{{ num }}</span>
+      {% elif num == 1 or num == page_object.paginator.num_pages or num >= page_object.number|add:"-2" and num <= page_object.number|add:"2" %} <a href="?page={{ num }}" class="page-btn">{{ num }}</a>
+        {% elif num == page_object.number|add:"-3" or num == page_object.number|add:"3" %}
+        <span class="page-ellipsis">…</span>
+        {% endif %}
+        {% endfor %}
+
+        {% if page_object.has_next %}
+        <a href="?page={{ page_object.next_page_number }}" class="page-btn" aria-label="Next page">›</a>
+        {% else %}
+        <span class="page-btn disabled" aria-disabled="true">›</span>
+        {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>{# /.table-card #}
+
+{# ── Assign modal ─────────────────────────────────────────────────────────── #}
+<div class="modal fade" id="assign-license-list-modal" tabindex="-1" aria-labelledby="assignLicenseLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" id="assign-license-modal-content" hx-target="this"></div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,234 @@
+{% load static %}
+<div class="modal-content modal-premium">
+    <div class="modal-header border-0 pb-0">
+        <div class="d-flex flex-column">
+            <h5 class="modal-title fw-bold" id="myModalLabel160">Update User</h5>
+            <p class="modal-subtitle mb-0">Modify the architectural curator profile details.</p>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    
+    <form hx-encoding='multipart/form-data' hx-post='{{request.path}}' novalidate>
+        {% csrf_token %}
+        <div class="modal-body">
+            
+            <!-- Section: Personal Information -->
+            <div class="section-header">
+                <div class="icon-box">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <h6 class="section-title">Personal Information</h6>
+            </div>
+            
+            <div class="row g-3">
+                <div class="col-md-12">
+                    <div class="premium-input-group">
+                        <label>Full Name <span class="text-danger">*</span></label>
+                        <div class="premium-input-with-icon">
+                            <i class="bi bi-person"></i>
+                            {{form.full_name}}
+                        </div>
+                        {% for error in form.full_name.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="premium-input-group">
+                        <label>Email Address <span class="text-danger">*</span></label>
+                        <div class="premium-input-with-icon">
+                            <i class="bi bi-envelope"></i>
+                            {{form.email}}
+                        </div>
+                        {% for error in form.email.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="premium-input-group">
+                        <label>Phone Number <span class="text-danger">*</span></label>
+                        <div class="premium-input-with-icon">
+                            <i class="bi bi-phone"></i>
+                            {{form.phone}}
+                        </div>
+                        {% for error in form.phone.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Office Information -->
+            <div class="section-header">
+                <div class="icon-box">
+                    <i class="bi bi-briefcase-fill"></i>
+                </div>
+                <h6 class="section-title">Office Information</h6>
+            </div>
+            
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="premium-input-group">
+                        <label>Department</label>
+                        <div class="premium-input-with-icon">
+                            <i class="bi bi-collection"></i>
+                            {{form.department}}
+                        </div>
+                        {% for error in form.department.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="premium-input-group">
+                        <label>Job Title / Role</label>
+                        <div class="premium-input-with-icon">
+                            <i class="bi bi-person-badge"></i>
+                            {{form.role}}
+                        </div>
+                        {% for error in form.role.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="premium-input-group">
+                        <label>Office Location</label>
+                        <div class="premium-input-with-icon">
+                            <i class="bi bi-geo-alt"></i>
+                            {{form.location}}
+                        </div>
+                        {% for error in form.location.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="premium-input-group">
+                        <label>Access Level</label>
+                        <div class="premium-input-with-icon">
+                            <i class="bi bi-shield"></i>
+                            {{form.access_level}}
+                        </div>
+                        {% for error in form.access_level.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-12">
+                    <div class="premium-input-group">
+                        <label>Profile Picture</label>
+                        <div class="premium-input-with-icon">
+                            <i class="bi bi-image"></i>
+                            {{form.profile_pic}}
+                        </div>
+                        {% for error in form.profile_pic.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    <div id="imagePreview" class="mt-2 text-center">
+                        {% if user.profile_pic %}
+                            <img src="{{user.profile_pic.url}}" class="rounded-circle border shadow-sm" style="width: 80px; height: 80px; object-fit: cover;"/>
+                        {% else %}
+                            <img src="{% static 'images/faces/1.jpg' %}" class="rounded-circle border shadow-sm" style="width: 80px; height: 80px; object-fit: cover;"/>
+                        {% endif %}
+                    </div>                    
+                </div>
+            </div>
+
+            <!-- Section: Address Information -->
+            <div class="section-header">
+                <div class="icon-box">
+                    <i class="bi bi-geo-alt-fill"></i>
+                </div>
+                <h6 class="section-title">Address Information</h6>
+            </div>
+            
+            <div class="row g-3">
+                <div class="col-md-12">
+                    <div class="premium-input-group">
+                        <label>Street Address</label>
+                        <div class="premium-input-with-icon">
+                            <i class="bi bi-house"></i>
+                            {{address_form.address_line_one}}
+                        </div>
+                        {% for error in address_form.address_line_one.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="premium-input-group">
+                        <label>City</label>
+                        <div class="premium-input-with-icon">
+                            <i class="bi bi-building"></i>
+                            {{address_form.city}}
+                        </div>
+                        {% for error in address_form.city.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="premium-input-group">
+                        <label>State/Province</label>
+                        <div class="premium-input-with-icon">
+                            <i class="bi bi-map"></i>
+                            {{address_form.state}}
+                        </div>
+                        {% for error in address_form.state.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="premium-input-group">
+                        <label>Zip Code</label>
+                        <div class="premium-input-with-icon">
+                            <i class="bi bi-hash"></i>
+                            {{address_form.pin_code}}
+                        </div>
+                        {% for error in address_form.pin_code.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn-discard" data-bs-dismiss="modal">Discard</button>
+            <button type="submit" class="btn-save-user" 
+                onclick="this.innerHTML = `<span class='spinner-grow spinner-grow-sm' role='status' aria-hidden='true'></span> Saving...`;"> 
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Image preview enhancement
+    const profilePicInput = document.querySelector('input[type="file"]');
+    if (profilePicInput) {
+        profilePicInput.classList.add('form-control');
+        profilePicInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('imagePreview');
+                    preview.innerHTML = `<img src="${e.target.result}" class="rounded-circle border shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    htmx.on("htmx:beforeSwap", (e) => {
+        if (e.detail.target.id == "update-user-modal-content" && !e.detail.xhr.response) {
+            location.reload()
+        }
+    })
+</script>

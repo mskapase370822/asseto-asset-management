@@ -1,0 +1,196 @@
+{% extends 'layouts/main-layout.html' %}
+{% load custom_filters %}
+{% load static %}
+
+{% block title %}Pending Audits | Asseto{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/list-common.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/audit.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/assets/assets-common.css' %}">
+{% endblock css %}
+
+{% block content %}
+
+{# ── Page header ──────────────────────────────────────────────────────────── #}
+<div class="list-page-header">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb page-breadcrumb">
+        <li class="breadcrumb-item"><a href="/" class="breadcrumb-link">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'audit:completed_audits' %}" class="breadcrumb-link">Audit</a></li>
+        <li class="breadcrumb-item active">Pending</li>
+      </ol>
+    </nav>
+    <h1>Asset Audits</h1>
+    <p class="page-subtitle">Track and manage asset audit history and compliance.</p>
+  </div>
+  <div class="d-flex align-items-center gap-2 mt-1">
+    <a href="{% url 'audit:add_audit' %}" class="btn-register">
+      <i class="bi bi-plus-lg"></i> New Audit
+    </a>
+  </div>
+</div>
+
+{# ── Stat cards ───────────────────────────────────────────────────────────── #}
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="bi bi-clipboard2-check"></i></div>
+    <div>
+      <div class="stat-label">Total Audits</div>
+      <div class="stat-value">{{ total_audit_count }}</div>
+    </div>
+  </div>
+  <a href="{% url 'audit:completed_audits' %}" class="stat-card">
+    <div class="stat-icon green"><i class="bi bi-check-circle-fill"></i></div>
+    <div>
+      <div class="stat-label">Completed (30d)</div>
+      <div class="stat-value">{{ completed_count }}</div>
+    </div>
+  </a>
+  <div class="stat-card">
+    <div class="stat-icon orange"><i class="bi bi-clock-fill"></i></div>
+    <div>
+      <div class="stat-label">Pending</div>
+      <div class="stat-value">{{ pending_count }}</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div>
+    <div>
+      <div class="stat-label">Overdue</div>
+      <div class="stat-value">{{ pending_count }}</div>
+    </div>
+  </div>
+</div>
+
+{# ── Tab bar ──────────────────────────────────────────────────────────────── #}
+<div class="filter-card">
+  <div class="d-flex align-items-center justify-content-between">
+    <div class="tab-pills">
+      <a href="{% url 'audit:pending_audits' %}" class="tab-pill active">Pending</a>
+      <a href="{% url 'audit:completed_audits' %}" class="tab-pill">Completed</a>
+    </div>
+  </div>
+</div>
+
+{# ── Table card ───────────────────────────────────────────────────────────── #}
+<div class="table-card">
+  <div class="table-responsive">
+    <table class="assets-table list-table" id="table1">
+      <thead>
+        <tr>
+          <th>Sl No.</th>
+          <th>Image</th>
+          <th>Asset Tag</th>
+          <th>Asset Name</th>
+          <th>Product Type</th>
+          <th>Assigned To</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody id="search_result">
+        {% if data_set %}
+          {% for data in data_set %}
+          {% with asset=data.asset %}
+          <tr>
+            <td class="table-index-cell">
+              {{ forloop.counter|stringformat:"02d" }}
+            </td>
+
+            <td>
+              {% with img=asset_images|get_item:asset.id %}
+                <img class="asset-thumb"
+                  src="{% if img %}{{ img.image.url }}{% else %}{% static 'images/No_Image.jpg' %}{% endif %}"
+                  alt="{{ asset.name }}"
+                  width="52" height="52"
+                  onerror="this.onerror=null;this.src='{% static 'images/No_Image.jpg' %}';">
+              {% endwith %}
+            </td>
+
+            <td><span class="asset-tag-pill">{{ asset.tag }}</span></td>
+
+            <td>
+              {% with asset_conditions_map|get_item:asset.id as condition_list %}
+                {% with condition_list|default:''|last as condition %}
+                  <div class="asset-name-main">{{ asset.name }}</div>
+                  <div class="asset-name-sub">
+                    {% if asset.product %}{{ asset.product.name }}{% endif %}
+                    {% if condition == 0 or condition == 1 %}
+                      &nbsp;·&nbsp;<span class="state-excellent">● Excellent</span>
+                    {% elif condition == 2 %}
+                      &nbsp;·&nbsp;<span class="state-good">● Good</span>
+                    {% elif condition == 3 or condition == 4 %}
+                      &nbsp;·&nbsp;<span class="state-poor">● Needs Repair</span>
+                    {% endif %}
+                  </div>
+                {% endwith %}
+              {% endwith %}
+            </td>
+
+            <td>{{ asset.product.product_type }}</td>
+
+            <td>
+              {% if asset.is_assigned %}
+                {% with map=asset_user_map|get_item:asset.id %}
+                  <div class="assignee-chip mb-1">
+                    {% if map.image %}
+                      <img src="{{ map.image.url }}"
+                        onerror="this.onerror=null;this.src='{% static 'images/faces/1.jpg' %}';"
+                        alt="{{ map.full_name }}" width="22" height="22">
+                    {% else %}
+                      <span class="assignee-initials">
+                        {% if map.full_name %}{{ map.full_name|slice:":2"|upper }}{% else %}??{% endif %}
+                      </span>
+                    {% endif %}
+                    <span>{{ map.full_name|default:"Unknown User" }}</span>
+                  </div>
+                {% endwith %}
+              {% else %}
+                <span class="unassigned-label">Unassigned</span>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if not asset.is_assigned %}
+                <span class="status-badge" style="background:var(--color-bg-secondary); color:var(--color-text);">{{ asset.asset_status.name }}</span>
+              {% else %}
+                <span class="status-badge status-allocated">Allocated</span>
+              {% endif %}
+            </td>
+
+            <td>
+              <div class="row-actions">
+                <a href="{% url 'assets:details' asset.id %}" class="action-btn" title="View details">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'audit:get_audits_by_id' data.asset.id %}" class="action-btn" title="Audit history">
+                  <i class="bi bi-archive"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endwith %}
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8">
+              <div class="table-empty-state">
+                <i class="bi bi-check-circle d-block"></i>
+                <p>No pending audits. All assets are up to date.</p>
+              </div>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if data_set %}
+    {% include 'commons/list-pagination.html' with page_object=data_set item_label="pending audits" %}
+  {% endif %}
+</div>{# /.table-card #}
+
+{% endblock content %}

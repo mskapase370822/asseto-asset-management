@@ -1,0 +1,314 @@
+{% extends 'layouts/main-layout.html' %}
+{% load static %}
+{% block title %}Update Asset | Asseto{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/list-common.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/assets/assets-common.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/assets/assets-form.css' %}">
+{% endblock css %}
+
+{% block content %}
+
+{# ── Page header ──────────────────────────────────────────────────────────── #}
+<div class="update-page-header">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb page-breadcrumb mb-2">
+        <li class="breadcrumb-item"><a href="/" class="breadcrumb-link">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'assets:list' %}" class="breadcrumb-link">Assets</a></li>
+        <li class="breadcrumb-item active">Update Asset</li>
+      </ol>
+    </nav>
+    <h1 class="page-title">Update Asset</h1>
+  </div>
+  <div class="header-actions">
+    <a href="{% url 'assets:list' %}" class="btn-reset">
+      <i class="bi bi-arrow-left"></i> Back to List
+    </a>
+    <a href="{% url 'assets:details' asset.id %}" class="btn-reset">
+      <i class="bi bi-arrow-left-short"></i> Back to Detail
+    </a>
+    <button type="submit" form="update-asset-form" class="btn-register ms-2">
+      <i class="bi bi-floppy"></i> Save Changes
+    </button>
+  </div>
+</div>
+
+<form id="update-asset-form" method="POST" action="{{ request.path }}" novalidate enctype="multipart/form-data">
+{% csrf_token %}
+
+{# ── General Information ───────────────────────────────────────────────────── #}
+<div class="form-section">
+  <div class="section-header">
+    <div class="section-icon"><i class="bi bi-info-circle-fill"></i></div>
+    <h2>General Information</h2>
+  </div>
+  <div class="section-body">
+    <div class="row g-3">
+
+      <div class="col-md-4 col-12">
+        <label class="field-label">Asset Tag</label>
+        {{ form.tag }}
+        {% for e in form.tag.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+      </div>
+
+      <div class="col-md-4 col-12">
+        <label class="field-label">Asset Name</label>
+        {{ form.name }}
+        {% for e in form.name.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+      </div>
+
+      <div class="col-md-4 col-12">
+        <label class="field-label">Product Category</label>
+        {{ form.product }}
+        {% for e in form.product.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+      </div>
+
+      <div class="col-md-4 col-12">
+        <label class="field-label">Vendor</label>
+        {{ form.vendor }}
+        {% for e in form.vendor.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+      </div>
+
+      <div class="col-md-4 col-12">
+        <label class="field-label">Office Location</label>
+        {{ form.location }}
+        {% for e in form.location.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+      </div>
+
+      <div class="col-md-4 col-12">
+        <label class="field-label">Serial No.</label>
+        {{ form.serial_no }}
+        {% for e in form.serial_no.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+      </div>
+
+      <div class="col-12">
+        <label class="field-label">Description &amp; Notes</label>
+        {{ form.description }}
+        {% for e in form.description.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{# ── Purchase & Lifecycle Details ─────────────────────────────────────────── #}
+<div class="form-section">
+  <div class="section-header">
+    <div class="section-icon"><i class="bi bi-cash-coin"></i></div>
+    <h2>Purchase &amp; Lifecycle Details</h2>
+  </div>
+  <div class="section-body">
+    <div class="row g-3">
+
+      <div class="col-md-4 col-12">
+        <label class="field-label">Purchase Price (₹)</label>
+        {{ form.price }}
+        {% for e in form.price.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+      </div>
+
+      <div class="col-md-4 col-12">
+        <label class="field-label">Purchase Type</label>
+        {{ form.purchase_type }}
+        {% for e in form.purchase_type.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+      </div>
+
+      <div class="col-md-4 col-12">
+        <label class="field-label">Purchase Date</label>
+        {{ form.purchase_date }}
+        {% for e in form.purchase_date.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+      </div>
+
+      <div class="col-md-4 col-12">
+        <label class="field-label">Warranty Expiry Date</label>
+        {{ form.warranty_expiry_date }}
+        {% for e in form.warranty_expiry_date.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{# ── Asset Media ───────────────────────────────────────────────────────────── #}
+<div class="form-section">
+  <div class="section-header">
+    <div class="section-icon"><i class="bi bi-images"></i></div>
+    <h2>Asset Media</h2>
+  </div>
+  <div class="section-body">
+
+    <div class="update-upload-area">
+      <i class="bi bi-image-fill"></i>
+      <div class="upload-text">
+        <div class="upload-label">Upload or Update Images</div>
+        <div class="upload-hint">Recommended size: 1200×800px. Max file size: 5MB.</div>
+      </div>
+      <label for="image-upload" class="btn-choose-file">Choose File</label>
+      <span id="file-chosen-label" class="upload-hint">No file chosen</span>
+    </div>
+    <input id="image-upload" type="file" name="image" multiple class="d-none"
+           onchange="document.getElementById('file-chosen-label').textContent = this.files.length > 1 ? this.files.length + ' files chosen' : (this.files[0]?.name || 'No file chosen')">
+
+    {% if asset_images %}
+    <div class="update-image-grid mt-3">
+      {% for img in asset_images %}
+      <div class="update-image-item" id="img-item-{{ img.id }}">
+        <img src="{{ img.image.url }}"
+             alt="Asset Image"
+             onerror="this.onerror=null;this.src='{% static 'images/No_Image.jpg' %}';">
+        <button type="button"
+                class="update-image-delete"
+                data-image-id="{{ img.id }}"
+                title="Delete image">
+          <i class="bi bi-trash3"></i>
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Custom Fields ─────────────────────────────────────────────────────────── #}
+{% if custom_fields %}
+<div class="form-section">
+  <div class="section-header">
+    <div class="section-icon"><i class="bi bi-sliders"></i></div>
+    <h2>Custom Fields</h2>
+  </div>
+  <div class="section-body">
+    <div class="row g-3" id="custom-field-container">
+      {% for cf in custom_fields %}
+      <div class="col-md-6 col-12 rm-custom-field">
+        <label class="field-label">{{ cf.field_name }}</label>
+        <input type="text" class="field-input"
+               name="custom_field_{{ cf.entity_id }}"
+               value="{{ cf.field_value }}"
+               autocomplete="off"
+               placeholder="{{ cf.field_name }}">
+      </div>
+      {% endfor %}
+    </div>
+    <div class="row g-3 mt-1" id="custom-field-new-container"></div>
+    <button type="button" id="addCustomFieldBtn" class="btn-add-row mt-3">
+      <i class="bi bi-plus-lg"></i> Add Custom Field
+    </button>
+  </div>
+</div>
+{% endif %}
+
+{# ── Asset Specifications ──────────────────────────────────────────────────── #}
+{% if assetSpecifications %}
+<div class="form-section">
+  <div class="section-header">
+    <div class="section-icon"><i class="bi bi-list-check"></i></div>
+    <h2>Asset Specifications</h2>
+  </div>
+  <div class="section-body">
+    <div id="spec-container">
+      {% for spec in assetSpecifications %}
+      <div class="spec-row rmsection">
+        <input type="text" class="field-input" placeholder="Specification Name"
+               name="specifications_name" value="{{ spec.name }}" autocomplete="off">
+        <input type="text" class="field-input" placeholder="Value"
+               name="specifications_value" value="{{ spec.value }}" autocomplete="off">
+        {% if forloop.first %}
+          <button type="button" id="newsectionbtn" class="btn-add-row" style="white-space:nowrap;">
+            <i class="bi bi-plus-lg"></i>
+          </button>
+        {% else %}
+          <button type="button" onclick="removeSpec(this)" class="btn-rm-row">
+            <i class="bi bi-dash-lg"></i>
+          </button>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# ── Form footer ───────────────────────────────────────────────────────────── #}
+<div class="update-form-footer">
+  <a href="{% url 'assets:details' asset.id %}" class="btn-back">Cancel</a>
+  <button type="submit" class="btn-register">
+    <i class="bi bi-check-lg"></i> Update Asset Record
+  </button>
+</div>
+
+</form>
+
+<div style="display:none">
+  <div class="rm-custom-field" id="custom-field-template">
+    <label class="field-label">Custom Field Name</label>
+    <input type="text" class="field-input" placeholder="Field Name" name="custom_field_name" autocomplete="off">
+    <label class="field-label mt-2">Custom Field Value</label>
+    <input type="text" class="field-input" placeholder="Field Value" name="custom_field_value" autocomplete="off">
+    <button type="button" onclick="removeCustomField(this)" class="btn-rm-row mt-2">
+      <i class="bi bi-dash-lg"></i>
+    </button>
+  </div>
+</div>
+
+<div style="display:none">
+  <div class="spec-row rmsection" id="spec-template">
+    <input type="text" class="field-input" placeholder="Specification Name" name="specifications_name" autocomplete="off">
+    <input type="text" class="field-input" placeholder="Value" name="specifications_value" autocomplete="off">
+    <button type="button" onclick="removeSpec(this)" class="btn-rm-row"><i class="bi bi-dash-lg"></i></button>
+  </div>
+</div>
+
+<script>
+// Image delete
+document.addEventListener('DOMContentLoaded', function () {
+  function getCookie(name) {
+    let v = null;
+    document.cookie.split(';').forEach(c => {
+      c = c.trim();
+      if (c.startsWith(name + '=')) v = decodeURIComponent(c.slice(name.length + 1));
+    });
+    return v;
+  }
+
+  document.querySelectorAll('.update-image-delete').forEach(btn => {
+    btn.addEventListener('click', function () {
+      if (!confirm('Delete this image?')) return;
+      const id = this.dataset.imageId;
+      fetch('{% url "assets:update_in_detail" id=asset.id %}', {
+        method: 'DELETE',
+        headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delete_image_ids: [id] })
+      }).then(r => {
+        if (r.ok) document.getElementById('img-item-' + id)?.remove();
+        else alert('Failed to delete image.');
+      }).catch(() => alert('Error deleting image.'));
+    });
+  });
+
+  // Spec add button
+  const specBtn = document.getElementById('newsectionbtn');
+  if (specBtn) {
+    specBtn.addEventListener('click', function () {
+      const tmpl = document.getElementById('spec-template');
+      document.getElementById('spec-container').appendChild(tmpl.cloneNode(true));
+    });
+  }
+
+  // Custom field add button
+  const cfBtn = document.getElementById('addCustomFieldBtn');
+  if (cfBtn) {
+    cfBtn.addEventListener('click', function () {
+      const tmpl = document.getElementById('custom-field-template');
+      const clone = tmpl.cloneNode(true);
+      clone.id = '';
+      document.getElementById('custom-field-new-container').appendChild(clone);
+    });
+  }
+});
+
+function removeSpec(el) { el.closest('.rmsection').remove(); }
+function removeCustomField(el) { el.closest('.rm-custom-field').remove(); }
+</script>
+
+{% endblock content %}

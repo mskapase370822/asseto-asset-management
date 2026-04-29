@@ -1,0 +1,292 @@
+{% extends 'layouts/main-layout.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}User Profile - {{ user.full_name }} | Asseto{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/list-common.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/users/users-detail.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/users/user-form.css' %}">
+{% endblock css %}
+
+{% block content %}
+<div class="user-detail-container">
+  {# ── Header ───────────────────────────────────────────────────────────── #}
+  <div class="detail-page-header">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb page-breadcrumb mb-2">
+          <li class="breadcrumb-item"><a href="/" class="breadcrumb-link">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'users:list' %}" class="breadcrumb-link">Users</a></li>
+          <li class="breadcrumb-item active">User Profile</li>
+        </ol>
+      </nav>
+      <h1 class="page-title mb-0">Overview</h1>
+    </div>
+    <div class="header-actions">
+      {% if perms.authentication.edit_users %}
+      <button type="button" class="btn-register" hx-get="{% url 'users:update' user.id %}"
+        hx-target="#update-user-modal-content" data-bs-toggle="modal" data-bs-target="#update-user-modal">
+        <i class="bi bi-pencil-square"></i> Edit Profile
+      </button>
+      {% endif %}
+      {% if perms.authentication.delete_users %}
+      <form action="{% url 'users:status' user.id %}" method="post" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" class="{% if user.is_active %}btn-danger-solid{% else %}btn-success-solid{% endif %}"
+          onclick="return confirm('{% if user.is_active %}Suspend access for this user?{% else %}Restore access for this user?{% endif %}')">
+          <i class="bi {% if user.is_active %}bi-person-x{% else %}bi-person-check{% endif %}"></i>
+          {% if user.is_active %}Suspend Access{% else %}Restore Access{% endif %}
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="detail-grid">
+    {# ── Sidebar (Left) ─────────────────────────────────────────────────── #}
+    <aside class="profile-sidebar">
+      <!-- Profile Card -->
+      <div class="card-profile">
+        <div class="profile-avatar-wrap">
+          {% if user.profile_pic %}
+          <img class="profile-avatar" src="{{ user.profile_pic.url }}" alt="{{ user.full_name }}"
+            onerror="this.onerror=null; this.src='{% static 'images/faces/1.jpg' %}';">
+          {% else %}
+          <img class="profile-avatar" src="{% static 'images/faces/1.jpg' %}" alt="Default Avatar">
+          {% endif %}
+        </div>
+        <h2 class="profile-name">{{ user.full_name }}</h2>
+        <span class="profile-id">ID: {{ user.employee_id|default:"N/A" }}</span>
+
+        <div class="profile-stats">
+          <div class="stat-item">
+            <span class="stat-label">Status</span>
+            <span class="badge-profile-status">{% if user.is_active %}ACTIVE{% else %}INACTIVE{% endif %}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Joined</span>
+            <span class="stat-value">{{ user.date_joined|date:"M Y" }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Security Level</span>
+            <div class="text-end">
+              <span class="stat-value security-level">Tier {{ user.role.level|default:"3" }}</span>
+              <div class="small text-muted">({{ user.role.related_name|default:"Admin" }})</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Details Card -->
+      <div class="card-contact">
+        <span class="section-title">Contact Details</span>
+        <div class="contact-list">
+          <div class="contact-item">
+            <div class="contact-icon-circle">
+              <i class="bi bi-envelope"></i>
+            </div>
+            <div class="contact-info">
+              <span class="contact-label">Email Address</span>
+              <a href="mailto:{{ user.email }}" class="contact-value">{{ user.email }}</a>
+            </div>
+          </div>
+
+          <div class="contact-item">
+            <div class="contact-icon-circle">
+              <i class="bi bi-phone"></i>
+            </div>
+            <div class="contact-info">
+              <span class="contact-label">Mobile Phone</span>
+              <span class="contact-value">{{ user.phone|default:"N/A" }}</span>
+            </div>
+          </div>
+
+          <div class="contact-item">
+            <div class="contact-icon-circle">
+              <i class="bi bi-geo-alt"></i>
+            </div>
+            <div class="contact-info">
+              <span class="contact-label">Office Location</span>
+              <span class="contact-value">
+                {{ user.location.office_name|default:"Global HQ" }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    {# ── Main Area (Right) ──────────────────────────────────────────────── #}
+    <main class="main-content">
+
+      {% if assigned_assets %}
+      <!-- Current Asset Assignments -->
+      <div class="content-card">
+        <div class="card-header-flex border-bottom-0 pb-3">
+          <div>
+            <h3 class="card-header-title">Current Asset Assignments</h3>
+            <p class="text-muted mb-0 small">Inventory items currently registered to this profile.</p>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="list-table mb-0">
+            <thead>
+              <tr>
+                <th width="35%">Asset</th>
+                <th width="20%">Asset Tag</th>
+                <th width="20%">Status</th>
+                <th width="25%">Assigned Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for assigned_asset in assigned_assets %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="asset-thumb">
+                      {% if assigned_asset.asset.images.first %}
+                      <img src="{{ assigned_asset.asset.images.first.image.url }}"
+                        alt="{{ assigned_asset.asset.name }}">
+                      {% else %}
+                      <div class="asset-thumb-placeholder">
+                        <i class="bi bi-laptop"></i>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div>
+                      <div class="cell-name-main">{{ assigned_asset.asset.name }}</div>
+                      <div class="cell-name-sub">{{ assigned_asset.asset.product.name }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="asset-tag-code">{{ assigned_asset.asset.tag }}</span>
+                </td>
+                <td>
+                  <span class="badge bg-light-success text-success fw-bold" style="font-size: 0.65rem;">IN USE</span>
+                </td>
+                <td>
+                  <div class="date-stacked">
+                    {{ assigned_asset.assigned_date|date:"d M" }}<br>
+                    <span class="text-muted fw-normal">{{ assigned_asset.assigned_date|date:"Y" }}</span>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% include 'commons/list-pagination.html' with item_label="assets" page_object=assigned_assets page_param="assets_page" %}
+      </div>
+      {% endif %}
+
+      {% if assigned_licenses %}
+      <!-- Assigned Licenses -->
+      <div class="content-card">
+        <div class="card-header-flex">
+          <h3 class="card-header-title">Assigned Licenses</h3>
+          <span class="badge bg-primary rounded-pill">{{ assigned_licenses.paginator.count }}</span>
+        </div>
+        <div class="table-responsive">
+          <table class="list-table mb-0">
+            <thead>
+              <tr>
+                <th>License Name</th>
+                <th>Type</th>
+                <th>License Key</th>
+                <th>Assigned Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for assigned_license in assigned_licenses %}
+              <tr>
+                <td>
+                  <div class="cell-name-main">{{ assigned_license.license.name }}</div>
+                </td>
+                <td>{{ assigned_license.license.license_type.name }}</td>
+                <td><code>{{ assigned_license.license.key }}</code></td>
+                <td><span class="text-muted">{{ assigned_license.assigned_date|date:"d M, Y" }}</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Activity Log (History) -->
+      {% if page_object %}
+      <div class="content-card">
+        <div class="card-header-flex border-bottom-0 pb-3">
+          <h3 class="card-header-title">Activity Log</h3>
+          <a href="#" class="btn-reset text-primary fw-bold" style="font-size: 0.75rem; letter-spacing: 0.05em;">VIEW ALL HISTORY</a>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th width="35%">Action Type</th>
+                <th width="20%">Resource</th>
+                <th width="25%">Timestamp</th>
+                <th width="20%" class="text-end">Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for history in page_object %}
+              <tr class="activity-row">
+                <td class="activity-cell">
+                  <div class="activity-type-wrap">
+                    <div class="activity-circle {% if history.history_type == '+' %}circle-success{% elif history.history_type == '-' %}circle-danger{% else %}circle-primary{% endif %}">
+                      <i class="bi {% if history.history_type == '+' %}bi-plus-circle{% elif history.history_type == '-' %}bi-trash{% else %}bi-arrow-repeat{% endif %}"></i>
+                    </div>
+                    <div>
+                      <span class="activity-title-main">
+                        {% if history.history_type == "+" %}Account Created{% elif history.history_type == "^" %}Record Restored{% elif history.history_type == "-" %}Account Deleted{% else %}Profile Updated{% endif %}
+                      </span>
+                      <span class="activity-subtitle">by {{ history.history_user.full_name|default:"System" }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="activity-cell">
+                  <span class="activity-resource">#{{ history.employee_id|default:history.username|default:"SYSTEM"|truncatechars:12 }}</span>
+                </td>
+                <td class="activity-cell">
+                  <div class="activity-time-stacked">
+                    <div>{{ history.history_date|date:"d M," }}</div>
+                    <span>{{ history.history_date|date:"h:i A" }}</span>
+                  </div>
+                </td>
+                <td class="activity-cell activity-result-cell">
+                  <span class="activity-result-text {% if history.history_type == '+' %}text-success{% else %}text-primary{% endif %}">
+                    {% if history.history_type == '+' %}Verified{% else %}Success{% endif %}
+                  </span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        
+        {% if page_object.paginator.num_pages > 1 %}
+        <div class="border-top p-3">
+          {% include 'commons/list-pagination.html' with item_label="history" page_object=page_object page_param="history_page" %}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </main>
+  </div>
+</div>
+
+{# ── Modals ───────────────────────────────────────────────────────────────── #}
+<div class="modal fade" id="update-user-modal" tabindex="-1" aria-labelledby="updateUserLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div id="update-user-modal-content" class="modal-content" hx-target="this"></div>
+  </div>
+</div>
+
+{% endblock content %}

@@ -1,0 +1,228 @@
+{% extends 'layouts/main-layout.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Vendor Directory | Asseto{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/pages/list-common.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/vendors.css' %}">
+{% endblock css %}
+
+{% block content %}
+
+{# ── Page header ──────────────────────────────────────────────────────────── #}
+<div class="list-page-header">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb page-breadcrumb">
+        <li class="breadcrumb-item"><a href="/" class="breadcrumb-link">Dashboard</a></li>
+        <li class="breadcrumb-item active">Vendors</li>
+      </ol>
+    </nav>
+    <h1>Vendor Directory</h1>
+    <p class="page-subtitle">Manage your organization's vendor relationships and contacts.</p>
+  </div>
+  <div class="d-flex align-items-center gap-2 mt-1">
+    <a href="{% url 'recycle_bin:deleted_vendors' %}" class="btn-trash" title="Recycle Bin">
+      <i class="bi bi-trash3"></i> Trash
+      {% if deleted_vendor_count %}<span class="count-badge">{{ deleted_vendor_count }}</span>{% endif %}
+    </a>
+    {% if perms.authentication.add_vendor %}
+      <a href="{% url 'vendors:add' %}" class="btn-register">
+        <i class="bi bi-plus-lg"></i> Add Vendor
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Stat cards ───────────────────────────────────────────────────────────── #}
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="bi bi-building"></i></div>
+    <div>
+      <div class="stat-label">Total Vendors</div>
+      <div class="stat-value">{{ total_vendor_count }}</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="bi bi-check-circle-fill"></i></div>
+    <div>
+      <div class="stat-label">Active</div>
+      <div class="stat-value">{{ active_vendor_count }}</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon orange"><i class="bi bi-pause-circle-fill"></i></div>
+    <div>
+      <div class="stat-label">Inactive</div>
+      <div class="stat-value">{{ inactive_vendor_count }}</div>
+    </div>
+  </div>
+  <a href="{% url 'recycle_bin:deleted_vendors' %}" class="stat-card">
+    <div class="stat-icon red"><i class="bi bi-trash3-fill"></i></div>
+    <div>
+      <div class="stat-label">Recycle Bin</div>
+      <div class="stat-value">{{ deleted_vendor_count }}</div>
+    </div>
+  </a>
+</div>
+
+{# ── Filter bar ───────────────────────────────────────────────────────────── #}
+<div class="filter-card">
+  <div class="row g-2 align-items-end">
+    <div class="col">
+      <div class="filter-label">Search Vendor</div>
+      <input name="search_text" type="search"
+        autocomplete="off" placeholder="Name, email or contact…"
+        hx-get="{% url 'vendors:search' page_object.number %}"
+        hx-trigger="keyup changed delay:400ms, search"
+        hx-target="#search_result"
+        aria-label="Search vendors">
+    </div>
+    {% if request.user.is_superuser %}
+      <div class="col-auto">
+        <div class="dropdown">
+          <button class="btn-export dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-label="Export">
+            <i class="bi bi-download"></i> Export
+          </button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{% url 'vendors:export_vendors_csv' %}"><i class="bi bi-filetype-csv"></i> CSV Format</a></li>
+            <li><a class="dropdown-item" href="{% url 'vendors:export_vendors_pdf' %}"><i class="bi bi-filetype-pdf"></i> PDF Format</a></li>
+          </ul>
+        </div>
+      </div>
+    {% endif %}
+    <div class="col-auto">
+      <a href="{% url 'vendors:list' %}" class="btn-reset" title="Reset">
+        <i class="bi bi-arrow-counterclockwise"></i> Reset
+      </a>
+    </div>
+  </div>
+  {% if is_demo is True %}
+    <p class="demo-note">* Demo mode: Update &amp; Delete are disabled.</p>
+  {% endif %}
+</div>
+
+{# ── Table card ───────────────────────────────────────────────────────────── #}
+<div class="table-card">
+  <div class="table-responsive">
+    <table class="list-table" id="table1">
+      <thead>
+        <tr>
+          <th>Sl No.</th>
+          <th>Vendor Name</th>
+          <th>Contact Person</th>
+          <th>Email</th>
+          <th>GSTIN No.</th>
+          <th>Phone No.</th>
+          <th>Status</th>
+          <th>Asset Count</th>
+          {% if perms.authentication.edit_vendor or perms.authentication.view_vendor or perms.authentication.delete_vendor %}
+            <th>Actions</th>
+          {% endif %}
+        </tr>
+      </thead>
+
+      {% if page_object %}
+      <tbody id="search_result">
+        {% for vendors in page_object %}
+        <tr>
+          <td class="table-index-cell">
+            {{ page_object.start_index|add:forloop.counter0|stringformat:"02d" }}
+          </td>
+          <td>
+            <div class="cell-name-main">{{ vendors.name }}</div>
+          </td>
+          <td>{% dynamic_display_name vendors.contact_person %}</td>
+          <td>{{ vendors.email }}</td>
+          <td>{{ vendors.gstin_number }}</td>
+          <td>{{ vendors.phone }}</td>
+          <td>
+            {% if request.user.is_superuser %}
+              <div class="form-check form-switch status-toggle">
+                <input
+                  class="form-check-input"
+                  hx-post="{% url 'vendors:status' vendors.id %}"
+                  hx-headers='{"X-CSRFToken":"{{ csrf_token }}"}'
+                  type="checkbox" {% if vendors.status %} checked {% endif %}>
+              </div>
+            {% else %}
+              {% if vendors.status %}
+                <span class="status-badge status-active">Active</span>
+              {% else %}
+                <span class="status-badge status-inactive">Inactive</span>
+              {% endif %}
+            {% endif %}
+          </td>
+          <td>
+            {% with count=count_array|get_at_index:forloop.counter0 %}
+              {% if count %}
+                <span class="count-pill">{{ count }}</span>
+              {% else %}
+                <span class="count-pill zero">0</span>
+              {% endif %}
+            {% endwith %}
+          </td>
+          {% if perms.authentication.edit_vendor or perms.authentication.view_vendor or perms.authentication.delete_vendor %}
+          <td>
+            <div class="row-actions">
+              {% if perms.authentication.view_vendor %}
+                <a href="{% url 'vendors:details' vendors.id %}" class="action-btn" title="View {{ vendors.name }}">
+                  <i class="bi bi-eye"></i>
+                </a>
+              {% endif %}
+              {% if perms.authentication.edit_vendor %}
+                <a href="{% url 'vendors:update_vendor' vendors.id %}"
+                  class="action-btn {% if is_demo %}disabled{% endif %}"
+                  title="Edit {{ vendors.name }}">
+                  <i class="bi bi-pencil"></i>
+                </a>
+              {% endif %}
+              {% if perms.authentication.delete_vendor %}
+                <form action="{% url 'vendors:delete_vendor' vendors.id %}" method="post" class="form-row-action"
+                      onsubmit="return confirm('Delete {{ vendors.name }}? It can be restored from Recycle Bin.')">
+                  {% csrf_token %}
+                  <button type="submit"
+                    class="action-btn danger {% if is_demo %}disabled{% endif %}"
+                    title="Delete {{ vendors.name }}"
+                    {% if is_demo %}disabled{% endif %}>
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                </form>
+              {% endif %}
+            </div>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+
+      {% else %}
+      <tbody>
+        <tr>
+          <td colspan="9">
+            <div class="table-empty-state">
+              <i class="bi bi-building d-block"></i>
+              <p>No vendors found.<br>
+                <a href="{% url 'vendors:add' %}" class="link-primary">Add your first vendor</a>
+              </p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+      {% endif %}
+    </table>
+  </div>
+
+  {% include 'commons/list-pagination.html' with item_label="vendors" %}
+</div>{# /.table-card #}
+
+{# ── Add vendor modal ────────────────────────────────────────────────────── #}
+<div class="modal fade" id="add-vendor-modal" tabindex="-1" aria-labelledby="addVendorLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div id="add-vendor-modal-content" class="modal-content" hx-target="this"></div>
+  </div>
+</div>
+
+{% endblock content %}

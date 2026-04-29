@@ -1,0 +1,83 @@
+<div class="assign-modal-header">
+    <div>
+        <h5 class="assign-modal-title">Assign Asset</h5>
+        <p class="assign-modal-subtitle">Assign an asset to a user</p>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<form hx-post='{{request.path}}' novalidate>
+    {% csrf_token %}
+    <div class="modal-body p-4">
+        <div class="row">
+            <div class="col-md-12">
+                {# ── Asset selector ──────────────────────────────────────── #}
+                <div class="assign-form-group">
+                    <label class="assign-form-label">Asset Name</label>
+                    {{ form.asset }}
+                    {% for error in form.asset.errors %}
+                        <small class="text-danger">{{ error }}</small>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                {# ── Assignee Name ───────────────────────────────────────── #}
+                <div class="assign-form-group">
+                    <label class="assign-form-label">Assignee Name</label>
+                    {{ form.user }}
+                    {% for error in form.user.errors %}
+                        <small class="text-danger">{{ error }}</small>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                {# ── Issue Date ──────────────────────────────────────────── #}
+                <div class="assign-form-group">
+                    <label class="assign-form-label">Issue Date</label>
+                    {{ form.issue_date }}
+                    {% for error in form.issue_date.errors %}
+                        <small class="text-danger">{{ error }}</small>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                {# ── Asset Images ────────────────────────────────────────── #}
+                <div class="assign-form-group">
+                    <label class="assign-form-label">Asset Images</label>
+                    {{ image_form.image }}
+                    {% for error in image_form.image.errors %}
+                        <small class="text-danger">{{ error }}</small>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                {# ── Assignment Notes ────────────────────────────────────── #}
+                <div class="assign-form-group mb-0">
+                    <label class="assign-form-label">Assignment Notes</label>
+                    {{ form.notes }}
+                    {% for error in form.notes.errors %}
+                        <small class="text-danger">{{ error }}</small>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="assign-modal-footer">
+        <button type="button" class="btn-reset" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn-register"
+            onclick="this.innerHTML = `<span class='spinner-grow spinner-grow-sm' role='status' aria-hidden='true'></span> Saving...`;">
+            Confirm Assignment
+        </button>
+    </div>
+</form>
+<script>
+    htmx.on("htmx:beforeSwap", (e) => {
+        if ((e.detail.target.id == "assign-asset-modal-content") && !e.detail.xhr.response) {
+            location.reload()
+        }
+    })
+</script>

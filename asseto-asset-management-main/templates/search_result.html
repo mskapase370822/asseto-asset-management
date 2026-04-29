@@ -1,0 +1,61 @@
+{% if not assets and not products and not users %}
+<div class="empty-state">
+  <i class="bi bi-inbox d-block"></i>
+  <p class="mb-1 fw-medium">No results found</p>
+  <p class="mb-0 small">Try a different search term</p>
+</div>
+{% else %}
+
+{% if assets %}
+<div class="result-section">
+  <div class="section-label">Assets</div>
+  {% for asset in assets %}
+  <a href="{% url 'assets:details' asset.id %}" class="result-item" data-bs-dismiss="modal">
+    <div class="result-icon icon-asset"><i class="bi bi-laptop"></i></div>
+    <div class="result-content">
+      <p class="result-title">{{ asset.name }}</p>
+      <p class="result-meta">{{ asset.tag }} · {{ asset.product.product_sub_category.name }}</p>
+    </div>
+    <span class="result-badge {% if asset.asset_status.name == 'Available' %}bg-success-subtle text-success{% else %}bg-primary-subtle text-primary{% endif %}">
+      {{asset.asset_status.name}}
+    </span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if products %}
+<div class="result-section">
+  <div class="section-label">Products</div>
+  {% for product in products %}
+  <a href="{% url 'products:details_product' product.id %}" class="result-item" data-bs-dismiss="modal">
+    <div class="result-icon icon-product"><i class="bi bi-box-seam"></i></div>
+    <div class="result-content">
+      <p class="result-title">{{ product.name }}</p>
+      <p class="result-meta">{{ product.type.name }} · Model: {{ product.model }}</p>
+    </div>
+    <span class="result-badge bg-purple-subtle text-purple">{{ product.manufacturer }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if users %}
+<div class="result-section">
+  <div class="section-label">Users</div>
+  {% for user in users %}
+  <a href="{% url 'users:details' user.id %}" class="result-item" data-bs-dismiss="modal">
+    <div class="result-icon icon-user"><i class="bi bi-person"></i></div>
+    <div class="result-content">
+      <p class="result-title">{{ user.full_name }}</p>
+      <p class="result-meta">{{ user.email }} · {{ user.department.name }}</p>
+    </div>
+    <span class="result-badge bg-navy-subtle text-navy">
+      {{ user.role.related_name }}
+    </span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endif %}
